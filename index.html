@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>บันทึกคะแนน Pre-RT / Pre-NT / Pre-O-NET</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f6f7f4;--sf:#fff;--tx:#1d2b24;--mu:#66756d;--bd:#dde3de;--ac:#0f766e;--ac2:#e3f3f0;--ok:#d9f2e1;--okt:#166534;--wn:#fdf0cf;--wnt:#8a5a00;--er:#fde4e1;--ert:#b42318;--hd:#eef2ef;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--sf:#1a231f;--tx:#e6eee9;--mu:#92a39a;--bd:#2c3a33;--ac:#2dd4bf;--ac2:#173a35;--ok:#173a25;--okt:#86efac;--wn:#3d3010;--wnt:#fcd34d;--er:#451a17;--ert:#fda29b;--hd:#202b26;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121815;--sf:#1a231f;--tx:#e6eee9;--mu:#92a39a;--bd:#2c3a33;--ac:#2dd4bf;--ac2:#173a35;--ok:#173a25;--okt:#86efac;--wn:#3d3010;--wnt:#fcd34d;--er:#451a17;--ert:#fda29b;--hd:#202b26;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 'Sarabun',system-ui,sans-serif}
+header{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{flex:1}
+h1{font-size:18px;margin:0}main{max-width:1200px;margin:0 auto;padding:16px}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--tx);padding:7px 13px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--ac);color:var(--bg);font-weight:700}
+button,select,input{font:inherit;color:var(--tx)}
+.btn{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn.pri{background:var(--ac);color:var(--bg);border-color:var(--ac);font-weight:700}.btn.sm{padding:2px 8px;font-size:13px}
+input,select{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;min-width:0}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}.mu{color:var(--mu);font-size:13px}
+.drop{border:2px dashed var(--bd);border-radius:12px;padding:18px;text-align:center;background:var(--ac2)}
+.drop.hov{border-color:var(--ac)}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:10px;max-height:70vh}
+table{border-collapse:collapse;width:100%;background:var(--sf)}
+th,td{border-bottom:1px solid var(--bd);border-right:1px solid var(--bd);padding:4px 6px;text-align:center;white-space:nowrap;font-size:13px}
+th{background:var(--hd);position:sticky;top:0;z-index:2}
+td.l,th.l{text-align:left;position:sticky;left:0;background:var(--sf);z-index:1}th.l{background:var(--hd);z-index:3}
+td input,td select{padding:2px 5px;font-size:13px;width:100%}
+.c{min-width:34px;height:30px;border:1px solid var(--bd);border-radius:7px;background:var(--hd);cursor:pointer;padding:0 4px}
+.c.f{background:var(--ok);color:var(--okt);border-color:transparent}.c.p{background:var(--wn);color:var(--wnt);border-color:transparent}.c.z{background:var(--er);color:var(--ert);border-color:transparent}
+.items{display:flex;flex-wrap:wrap;gap:6px}.ci{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--mu)}
+.bar{height:6px;background:var(--hd);border-radius:4px;min-width:50px}.bar i{display:block;height:100%;background:var(--ac);border-radius:4px}
+.tot{font-size:22px;font-weight:700;color:var(--ac)}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:9px 16px;border-radius:10px;z-index:9;max-width:90%}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+</style></head><body>
+<header>
+ <div class="row"><h1>📝 บันทึกคะแนนสอบ</h1><span id="st" class="mu"></span><button class="btn sm" data-a="cfg">⚙ Google Sheet</button><button class="btn sm" id="pl" data-a="pull" hidden>🔄 โหลดจากคลาวด์</button><input id="sch" style="width:150px" title="ชื่อโรงเรียน"><span class="sp"></span>
+ <div class="seg" id="exs"></div><select id="rm" title="กรองตามห้อง"></select></div>
+ <div class="row" style="margin-top:8px"><div class="seg" id="tabs"></div><span class="sp"></span><button class="btn pri" data-a="exp">⬇ ส่งออก Excel</button></div>
+</header>
+<main id="app"></main><div id="ts"></div>
+<script>
+const R=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const Q=(n,m)=>R(0,n).map(x=>x*m);
+const E={
+RT:{t:'Pre-RT',g:'ป.1',sub:[
+ {k:'o',n:'อ่านออกเสียง',sh:'อ่านออกเสียง',s:11,G:[{n:'อ่านเป็นคำ 20 คำ',c:20,o:[0,1],t:1},{n:'อ่านข้อความ 10 ประโยค',c:10,o:[0,1,2,3],t:1}]},
+ {k:'c',n:'อ่านรู้เรื่อง',sh:'อ่านรู้เรื่อง',s:11,G:[{n:'คำ 10 คำ',c:10,o:[0,1],t:1},{n:'เล่าเรื่องจากภาพ 5 ภาพ',c:5,o:[0,1,2],t:1},{n:'ประโยค 10 ประโยค',c:10,o:[0,2],t:1},{n:'ข้อความ 5 ข้อความ',c:5,o:[0,2],t:1}]}]},
+NT:{t:'Pre-NT',g:'ป.3',sub:[
+ {k:'m',n:'คณิตศาสตร์',sh:'คณิตศาสตร์',s:11,G:[{n:'เลือกตอบ ข้อ 1-26 (ข้อละ 3)',c:26,o:[0,3],t:1},{n:'เติมคำตอบ ข้อ 27-29 (ข้อละ 4)',c:3,o:[0,2,4],t:1},{n:'แสดงวิธีทำ ข้อ 30 (10)',c:1,o:Q(10,1),t:1}]},
+ {k:'t',n:'ภาษาไทย',sh:'ภาษาไทย',s:11,G:[{n:'เลือกตอบ ข้อ 1-26 (ข้อละ 3)',c:26,o:[0,3],t:1},{n:'เขียนตอบสั้น ข้อ 27-29 (ข้อละ 5)',c:3,o:[0,2.5,5],t:1},{n:'เขียนตอบอิสระ ข้อ 30 (7)',c:1,o:Q(7,1),t:1}]}]},
+ONET:{t:'Pre-O-NET',g:'ป.6',sub:[
+ {k:'t',n:'ภาษาไทย',sh:'ไทย คณิต วิทย์ อังกฤษ',s:11,G:[{n:'ตอนที่ 1 ปรนัย 20 ข้อ (ข้อละ 4)',c:20,o:[0,4]},{n:'ตอนที่ 2 เรียงลำดับ (5) / ตอนที่ 3 อัตนัย (15)',c:2,o:[Q(5,1),Q(15,1)],t:1}]},
+ {k:'m',n:'คณิตศาสตร์',sh:'ไทย คณิต วิทย์ อังกฤษ',s:35,G:[{n:'ตอนที่ 1 ข้อ 1-11 (ข้อละ 6.5)',c:11,o:[0,6.5]},{n:'ตอนที่ 2 ข้อ 12-15 (ข้อละ 7.125)',c:4,o:[0,7.125]}]},
+ {k:'s',n:'วิทยาศาสตร์',sh:'ไทย คณิต วิทย์ อังกฤษ',s:51,G:[{n:'ตอนที่ 1 ปรนัย 18 ข้อ (ข้อละ 5)',c:18,o:[0,5]},{n:'ตอนที่ 2 เชิงซ้อน 2 ข้อ (ข้อละ 5)',c:2,o:[0,2.5,5]}]},
+ {k:'e',n:'ภาษาอังกฤษ',sh:'ไทย คณิต วิทย์ อังกฤษ',s:72,G:[{n:'ปรนัย 32 ข้อ (ข้อละ 3.125)',c:32,o:[0,3.125]}]}]}};
+for(const e of Object.values(E))for(const u of e.sub){let x=u.s;u.it=[];u.G.forEach((g,gi)=>{g.a=u.it.length;for(let i=0;i<g.c;i++)u.it.push({gi,o:Array.isArray(g.o[0])?g.o[i]:g.o,x:x++});g.b=u.it.length;if(g.t)g.tx=x++});u.gx=x}
+const $=s=>document.querySelector(s),rd=v=>Math.round(v*1000)/1000,sum=a=>rd(a.reduce((s,v)=>s+(v||0),0)),mx=it=>Math.max(...it.o);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S={school:'บ้านนาสวรรค์',ex:'RT',room:'',tab:'st',mode:'p',sub:0,cur:null,D:{RT:[],NT:[],ONET:[]}};
+try{const j=localStorage.getItem('prent-app');if(j)Object.assign(S,JSON.parse(j))}catch(e){}
+let tm=null;const H={},setSt=t=>{const e=$('#st');if(e)e.textContent=t};
+const CFG=()=>{try{return JSON.parse(localStorage.getItem('prent-cfg')||'{}')}catch(e){return{}}},GS=()=>!!CFG().url;
+const save=()=>{try{localStorage.setItem('prent-app',JSON.stringify(S))}catch(e){}if(GS()){setSt('รอบันทึก…');clearTimeout(tm);tm=setTimeout(push,1500)}};
+async function run(action,body){const c=CFG(),ld=action==='load',r=await fetch(ld?c.url+(c.url.includes('?')?'&':'?')+'action=load&key='+encodeURIComponent(c.key||''):c.url,ld?{}:{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...body,action,key:c.key||''})});const j=await r.json();if(j.error)throw new Error(j.error);return j}
+function grid(ex){const e=E[ex],h=['ลำดับ','ห้อง','คำนำหน้า','ชื่อ','นามสกุล','ประเภทเด็ก','สถานะ'];
+ e.sub.forEach(u=>{u.it.forEach((_,i)=>h.push(u.n+' ข้อ '+(i+1)));u.G.forEach(g=>{if(g.t)h.push('รวม '+u.n+' '+g.n)});h.push('รวม'+u.n)});h.push('รวมทุกวิชา','_data');
+ return [h,...S.D[ex].map((s,i)=>{const r=[i+1,s.room,s.pre,s.fn,s.ln,s.type,s.abs?'ขาดสอบ':'เข้าสอบ'];let T=0;
+  e.sub.forEach(u=>{u.it.forEach((_,k)=>r.push(s.abs?'':(sc(s,u)[k]??'')));u.G.forEach(g=>{if(g.t)r.push(s.abs?'':gtot(s,u,g))});const t=s.abs?'':utot(s,u);r.push(t);T+=t||0});
+  r.push(s.abs?'':rd(T),JSON.stringify(s));return r})]}
+async function push(){if(!GS())return;try{setSt('กำลังบันทึกลง Google Sheet…');for(const ex of Object.keys(S.D)){const j=JSON.stringify(S.D[ex]);if(H[ex]!==j){await run('saveExam',{ex,aoa:grid(ex)});H[ex]=j}}await run('saveSettings',{school:S.school});setSt('✔ บันทึกลง Google Sheet แล้ว')}catch(e){setSt('⚠ บันทึกไม่สำเร็จ: '+(e&&e.message||e))}}
+async function pull(){const r=await run('load');for(const ex of Object.keys(S.D)){if(r.D[ex].length){S.D[ex]=r.D[ex];H[ex]=JSON.stringify(S.D[ex])}else if(!S.D[ex].length)H[ex]='[]'}if(r.school)S.school=r.school;try{localStorage.setItem('prent-app',JSON.stringify(S))}catch(e){}}
+async function initSync(){Object.keys(H).forEach(k=>delete H[k]);$('#pl').hidden=!GS();if(!GS())return setSt('บันทึกเฉพาะในเครื่องนี้ (กด ⚙ เพื่อเชื่อม Google Sheet)');try{setSt('กำลังโหลดจาก Google Sheet…');await pull();render();await push()}catch(e){setSt('⚠ โหลดไม่สำเร็จ: '+(e&&e.message||e))}}
+const EX=()=>E[S.ex],all=()=>S.D[S.ex],list=()=>all().filter(s=>!S.room||s.room===S.room);
+const rooms=()=>[...new Set(all().map(s=>s.room).filter(Boolean))].sort();
+const sc=(s,u)=>s.sc[u.k]||(s.sc[u.k]=u.it.map(()=>null));
+const umax=u=>sum(u.it.map(mx)),gmax=(u,g)=>sum(u.it.slice(g.a,g.b).map(mx));
+const utot=(s,u)=>sum(u.G.map(g=>gtot(s,u,g))),gtot=(s,u,g)=>{const m=s.gt?.[u.k]?.[u.G.indexOf(g)];return m!=null?m:sum(sc(s,u).slice(g.a,g.b))};
+const fill=(s)=>{let n=0,t=0;EX().sub.forEach(u=>{sc(s,u).forEach(v=>{t++;if(v!=null)n++})});return t?n/t:0};
+const toast=m=>{const d=document.createElement('div');d.className='toast';d.textContent=m;$('#ts').append(d);setTimeout(()=>d.remove(),3200)};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const newS=(o)=>({id:uid(),pre:'เด็กชาย',fn:'',ln:'',room:S.room||'',type:'000 - ปกติ',abs:false,sc:{},...o});
+
+function cell(s,u,i){const it=u.it[i],v=sc(s,u)[i],a=`data-s="${s.id}" data-u="${u.k}" data-i="${i}"`;
+ if(it.o.length>5)return `<select class="c" ${a}><option value="">–</option>${it.o.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
+ return `<button class="c ${v==null?'':v==mx(it)?'f':v>0?'p':'z'}" ${a}>${v==null?'·':v}</button>`}
+const gt=(s,u,g,gi)=>`<b data-gt="${s.id}|${u.k}|${gi}">${gtot(s,u,g)}</b>/${gmax(u,g)}`;
+const ut=(s,u)=>`<span data-ut="${s.id}|${u.k}">${utot(s,u)}</span>`;
+
+function vStudents(){const L=list();return `
+<div class="card"><h3>นำเข้าไฟล์ Excel (รายชั้น/ห้อง)</h3>
+ <div class="drop" id="dz">ลากไฟล์ <b>Pre-RT / Pre-NT / Pre-O-NET (.xlsx)</b> มาวางที่นี่ หรือ <label class="btn" style="display:inline-block"><input type="file" id="fi" accept=".xlsx,.xls" multiple hidden>เลือกไฟล์</label>
+ <div class="row" style="justify-content:center;margin-top:10px">ห้อง/กลุ่มที่นำเข้า: <input id="irm" placeholder="เช่น ป.1/1" value="${esc(S.room)}" style="width:120px"></div>
+ <div class="mu" style="margin-top:6px">ระบบจับรูปแบบไฟล์ของ สพป. อัตโนมัติ (นักเรียนชื่อซ้ำในห้องเดิมจะอัปเดตคะแนนทับ)</div></div></div>
+<div class="card"><h3>วางรายชื่อทั้งชั้น/ห้อง (หลายคนพร้อมกัน)</h3><div class="mu">หนึ่งบรรทัดต่อหนึ่งคน เช่น “เด็กชายสมชาย ใจดี” หรือ “สมหญิง ใจงาม” (คัดลอกจาก Excel มาวางได้ ไม่ใส่คำนำหน้าจะเป็นเด็กชาย แก้ในตารางด้านล่างได้)</div><textarea id="bulk" rows="5" style="width:100%;margin:8px 0;background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px;font:inherit"></textarea><div class="row">ห้อง: <input id="brm" value="${esc(S.room)}" placeholder="เช่น ป.1/1" style="width:110px"><button class="btn pri" data-a="bulk">+ เพิ่มทั้งหมด</button></div></div>
+<div class="card"><h3>เพิ่มนักเรียนรายคน</h3><div class="row">
+ <select id="np"><option>เด็กชาย</option><option>เด็กหญิง</option></select><input id="nf" placeholder="ชื่อ" style="width:130px"><input id="nl" placeholder="นามสกุล" style="width:130px">
+ <input id="nr" list="rl" placeholder="ห้อง" value="${esc(S.room)}" style="width:100px"><datalist id="rl">${rooms().map(r=>`<option>${esc(r)}`).join('')}</datalist>
+ <button class="btn pri" data-a="add">+ เพิ่ม</button></div></div>
+<div class="card"><h3>รายชื่อ ${EX().g} ${EX().t} (${L.length} คน)</h3>${L.length?`<div class="tw"><table><tr><th>#</th><th>คำนำหน้า</th><th>ชื่อ</th><th>สกุล</th><th>ห้อง</th><th>สถานะ</th><th>กรอกแล้ว</th><th></th></tr>
+${L.map((s,i)=>`<tr><td>${i+1}</td><td><select data-f="pre" data-s="${s.id}">${['เด็กชาย','เด็กหญิง'].map(p=>`<option ${s.pre==p?'selected':''}>${p}</option>`).join('')}</select></td>
+<td><input data-f="fn" data-s="${s.id}" value="${esc(s.fn)}"></td><td><input data-f="ln" data-s="${s.id}" value="${esc(s.ln)}"></td><td><input data-f="room" data-s="${s.id}" value="${esc(s.room)}" style="width:80px"></td>
+<td><select data-f="abs" data-s="${s.id}"><option>เข้าสอบ</option><option ${s.abs?'selected':''}>ขาดสอบ</option></select></td>
+<td><div class="bar"><i style="width:${Math.round(fill(s)*100)}%"></i></div></td><td><button class="btn sm" data-a="del" data-s="${s.id}">ลบ</button></td></tr>`).join('')}</table></div>`:'<p class="mu">ยังไม่มีนักเรียน — นำเข้าไฟล์หรือเพิ่มรายคนด้านบน</p>'}</div>`}
+
+function groupCard(s,u){return u.G.map((g,gi)=>`<div class="card"><div class="row"><h3 style="margin:0">${esc(g.n)}</h3><span class="sp"></span>${gt(s,u,g,gi)}
+ <button class="btn sm" data-a="gf" data-s="${s.id}" data-u="${u.k}" data-g="${gi}" data-v="max">เต็มทั้งชุด</button><button class="btn sm" data-a="gf" data-s="${s.id}" data-u="${u.k}" data-g="${gi}" data-v="0">0 ทั้งชุด</button><button class="btn sm" data-a="gf" data-s="${s.id}" data-u="${u.k}" data-g="${gi}" data-v="">ล้าง</button></div>
+ <div class="items" style="margin-top:8px">${u.it.slice(g.a,g.b).map((_,j)=>`<div class="ci">${g.a+j+1}${cell(s,u,g.a+j)}</div>`).join('')}</div></div>`).join('')}
+
+function vEntry(){const L=list(),e=EX(),u=e.sub[Math.min(S.sub,e.sub.length-1)];
+ const head=`<div class="row" style="margin-bottom:12px"><div class="seg">${e.sub.map((x,i)=>`<button class="${x===u?'on':''}" data-a="sub" data-v="${i}">${x.n}</button>`).join('')}</div><div class="seg"><button class="${S.mode=='p'?'on':''}" data-a="mode" data-v="p">รายคน</button><button class="${S.mode=='g'?'on':''}" data-a="mode" data-v="g">ตารางรายข้อ</button><button class="${S.mode=='k'?'on':''}" data-a="mode" data-v="k">พิมพ์คะแนนรวมรายตอน (ทั้งชั้น)</button></div><span class="mu">คลิกช่องเพื่อวนค่า: ว่าง → เต็ม → … → 0 → ว่าง</span></div>`;
+ if(!L.length)return head+'<p class="mu">ยังไม่มีนักเรียนในห้องนี้ — ไปที่แท็บ “นักเรียน”</p>';
+ if(S.mode=='k')return head+`<p class="mu">พิมพ์คะแนนรวมของแต่ละตอนได้เลย (กด Tab เพื่อไปช่องถัดไป) — ใช้เมื่อมีแต่คะแนนรวม ไม่ได้ลงรายข้อ ค่าที่พิมพ์จะแทนผลรวมรายข้อของตอนนั้น</p><div class="tw"><table><tr><th class="l" rowspan="2">ชื่อ-สกุล</th><th rowspan="2">ห้อง</th><th rowspan="2">สถานะ</th>${u.G.map(g=>`<th>${esc(g.n)}</th>`).join('')}<th rowspan="2">รวม /${umax(u)}</th></tr><tr>${u.G.map(g=>`<th>เต็ม ${gmax(u,g)}</th>`).join('')}</tr>${L.map(s=>`<tr style="${s.abs?'opacity:.45':''}"><td class="l">${esc(s.pre+s.fn+' '+s.ln)}</td><td>${esc(s.room)}</td><td>${s.abs?'ขาด':'สอบ'}</td>${u.G.map((g,gi)=>`<td><input type="number" min="0" max="${gmax(u,g)}" step="any" style="width:90px;text-align:center" data-gm="${s.id}|${u.k}|${gi}" value="${s.gt?.[u.k]?.[gi]??(sc(s,u).slice(g.a,g.b).some(v=>v!=null)?gtot(s,u,g):'')}"></td>`).join('')}<td><b>${ut(s,u)}</b></td></tr>`).join('')}</table></div>`;
+ if(S.mode=='g')return head+`<div class="tw"><table><tr><th class="l" rowspan="2">ชื่อ-สกุล</th><th rowspan="2">สถานะ</th>${u.G.map(g=>`<th colspan="${g.c+(g.t?1:0)}">${esc(g.n)}</th>`).join('')}<th rowspan="2">รวม /${umax(u)}</th></tr><tr>${u.G.map(g=>R(g.a+1,g.b).map(n=>`<th>${n}</th>`).join('')+(g.t?'<th>รวม</th>':'')).join('')}</tr>
+ ${L.map(s=>`<tr style="${s.abs?'opacity:.45':''}"><td class="l">${esc(s.pre)}${esc(s.fn)} ${esc(s.ln)}</td><td>${s.abs?'ขาด':'สอบ'}</td>${u.G.map((g,gi)=>R(g.a,g.b-1).map(i=>`<td>${cell(s,u,i)}</td>`).join('')+(g.t?`<td>${gt(s,u,g,gi)}</td>`:'')).join('')}<td><b>${ut(s,u)}</b></td></tr>`).join('')}</table></div>`;
+ let s=L.find(x=>x.id===S.cur)||L[0];S.cur=s.id;
+ return head+`<div class="row" style="margin-bottom:12px"><button class="btn" data-a="nav" data-v="-1">◀</button><select id="cs" style="min-width:220px">${L.map((x,i)=>`<option value="${x.id}" ${x===s?'selected':''}>${i+1}. ${esc(x.pre+x.fn+' '+x.ln)}</option>`).join('')}</select><button class="btn" data-a="nav" data-v="1">▶</button>
+ <select data-f="abs" data-s="${s.id}"><option>เข้าสอบ</option><option ${s.abs?'selected':''}>ขาดสอบ</option></select><span class="sp"></span><span class="mu">รวม${u.n}</span><span class="tot">${ut(s,u)}</span><span class="mu">/ ${umax(u)}</span></div>${groupCard(s,u)}`}
+
+function stats(arr){const a=arr.filter(v=>v!=null);if(!a.length)return['-','-','-'];return[rd(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2),Math.max(...a),Math.min(...a)]}
+function sumRows(){const e=EX(),L=list();return L.map(s=>{const t=e.sub.map(u=>s.abs?null:utot(s,u));return{s,t,all:s.abs?null:sum(t)}})}
+function vSummary(){const e=EX(),rows=sumRows(),M=e.sub.map(umax),MT=sum(M);
+ const st=[...e.sub.map((_,i)=>stats(rows.map(r=>r.t[i]))),stats(rows.map(r=>r.all))];
+ return `<div class="card"><div class="g"><div><div class="mu">นักเรียน</div><div class="tot">${rows.length}</div></div><div><div class="mu">เข้าสอบ</div><div class="tot">${rows.filter(r=>!r.s.abs).length}</div></div><div><div class="mu">ขาดสอบ</div><div class="tot">${rows.filter(r=>r.s.abs).length}</div></div>
+ ${e.sub.map((u,i)=>`<div><div class="mu">เฉลี่ย${u.n}</div><div class="tot">${st[i][0]}</div><div class="mu">${st[i][0]=='-'?'':(st[i][0]/M[i]*100).toFixed(1)+'%'}</div></div>`).join('')}</div></div>
+ <div class="tw"><table><tr><th class="l">ชื่อ-สกุล</th><th>ห้อง</th><th>สถานะ</th>${e.sub.map((u,i)=>`<th>${u.n} /${M[i]}</th>`).join('')}<th>รวม /${MT}</th></tr>
+ ${rows.map(r=>`<tr><td class="l">${esc(r.s.pre+r.s.fn+' '+r.s.ln)}</td><td>${esc(r.s.room)}</td><td>${r.s.abs?'ขาดสอบ':'เข้าสอบ'}</td>${r.t.map(v=>`<td>${v??'-'}</td>`).join('')}<td><b>${r.all??'-'}</b></td></tr>`).join('')}
+ <tr><th class="l">เฉลี่ย</th><th></th><th></th>${st.map(x=>`<th>${x[0]}</th>`).join('')}</tr><tr><th class="l">สูงสุด / ต่ำสุด</th><th></th><th></th>${st.map(x=>`<th>${x[1]} / ${x[2]}</th>`).join('')}</tr></table></div>`}
+
+function render(){
+ $('#sch').value=S.school;
+ $('#exs').innerHTML=Object.entries(E).map(([k,e])=>`<button class="${S.ex==k?'on':''}" data-a="ex" data-v="${k}">${e.g} ${e.t}</button>`).join('');
+ $('#rm').innerHTML=`<option value="">ทั้งชั้น (ทุกห้อง)</option>`+rooms().map(r=>`<option ${S.room==r?'selected':''}>${esc(r)}</option>`).join('');
+ $('#tabs').innerHTML=[['st','👥 นักเรียน'],['en','✏️ กรอกคะแนน'],['su','📊 สรุปผล']].map(([k,t])=>`<button class="${S.tab==k?'on':''}" data-a="tab" data-v="${k}">${t}</button>`).join('');
+ $('#app').innerHTML=S.tab=='st'?vStudents():S.tab=='en'?vEntry():vSummary();
+ const dz=$('#dz');if(dz){['dragover','dragleave','drop'].forEach(n=>dz.addEventListener(n,ev=>{ev.preventDefault();dz.classList.toggle('hov',n=='dragover');if(n=='drop')imp([...ev.dataTransfer.files])}))}
+ const fi=$('#fi');if(fi)fi.onchange=()=>{imp([...fi.files]);fi.value=''};
+ save()}
+
+function setVal(s,u,i,v){sc(s,u)[i]=v;if(s.gt&&s.gt[u.k])delete s.gt[u.k][u.it[i].gi];const c=document.querySelector(`[data-s="${s.id}"][data-u="${u.k}"][data-i="${i}"]`);if(c)c.outerHTML=cell(s,u,i);
+ u.G.forEach((g,gi)=>{const el=document.querySelector(`[data-gt="${s.id}|${u.k}|${gi}"]`);if(el)el.textContent=gtot(s,u,g)});
+ const el=document.querySelector(`[data-ut="${s.id}|${u.k}"]`);if(el)el.textContent=utot(s,u);save()}
+const sub=k=>EX().sub.find(u=>u.k===k);
+
+document.addEventListener('click',ev=>{
+ const c=ev.target.closest('button.c');
+ if(c){const s=all().find(x=>x.id===c.dataset.s),u=sub(c.dataset.u),i=+c.dataset.i,o=[...u.it[i].o].reverse(),v=sc(s,u)[i];
+  const k=v==null?0:o.indexOf(v)+1;return setVal(s,u,i,k>=o.length?null:o[k])}
+ const b=ev.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
+ if(a=='ex'){S.ex=v;S.room='';S.sub=0;S.cur=null}
+ else if(a=='tab')S.tab=v;else if(a=='mode')S.mode=v;else if(a=='sub')S.sub=+v;
+ else if(a=='nav'){const L=list(),i=L.findIndex(x=>x.id===S.cur);S.cur=L[Math.max(0,Math.min(L.length-1,i+ +v))].id}
+ else if(a=='del'){if(!confirm('ลบนักเรียนคนนี้?'))return;S.D[S.ex]=all().filter(x=>x.id!==b.dataset.s)}
+ else if(a=='add'){const fn=$('#nf').value.trim(),ln=$('#nl').value.trim();if(!fn)return toast('กรุณากรอกชื่อ');const r=$('#nr').value.trim();S.room=r||S.room;all().push(newS({pre:$('#np').value,fn,ln,room:r}));toast('เพิ่มแล้ว')}
+ else if(a=='gf'){const s=all().find(x=>x.id===b.dataset.s),u=sub(b.dataset.u),g=u.G[+b.dataset.g];if(s.gt&&s.gt[u.k])delete s.gt[u.k][+b.dataset.g];for(let i=g.a;i<g.b;i++)sc(s,u)[i]=v==='max'?mx(u.it[i]):v===''?null:0}
+ else if(a=='bulk'){const r=$('#brm').value.trim();let n=0;$('#bulk').value.split(/\n/).forEach(l=>{l=l.trim().replace(/^\d+[\.\)\s]+/,'');const m=l.match(/^(เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.)?\s*(\S+)\s*(.*)$/);if(!m)return;const fn=m[2],ln=m[3].trim();if(all().some(x=>x.fn===fn&&x.ln===ln&&x.room===r))return;all().push(newS({pre:/หญิง|ญ/.test(m[1]||'')?'เด็กหญิง':'เด็กชาย',fn,ln,room:r}));n++});if(r)S.room=r;toast(`เพิ่ม ${n} คน`)}
+ else if(a=='pull'){setSt('กำลังโหลด…');return push().then(pull).then(()=>{setSt('☁ โหลดข้อมูลล่าสุดแล้ว');render()}).catch(()=>setSt('⚠ โหลดไม่สำเร็จ'))}
+ else if(a=='cfg'){const c=CFG(),u=prompt('วาง URL ของ Web app (ลงท้าย /exec) — เว้นว่างเพื่อปิดการซิงก์',c.url||'');if(u===null)return;const k=prompt('รหัส API (ถ้าตั้ง API_KEY ใน Script Properties) — ไม่ตั้งให้เว้นว่าง',c.key||'');try{localStorage.setItem('prent-cfg',JSON.stringify({url:u.trim(),key:(k||'').trim()}))}catch(e){}return initSync()}
+ else if(a=='exp')return exp();
+ render()});
+document.addEventListener('change',ev=>{const t=ev.target;
+ if(t.dataset.gm){const[sid,uk,gi]=t.dataset.gm.split('|'),s=all().find(x=>x.id===sid),u=sub(uk),g=u.G[+gi];const v=t.value===''?null:Math.min(Math.max(+t.value,0),gmax(u,g));s.gt??={};s.gt[uk]??={};if(v==null)delete s.gt[uk][gi];else s.gt[uk][gi]=v;t.value=v??'';const el=document.querySelector(`[data-ut="${sid}|${uk}"]`);if(el)el.textContent=utot(s,u);return save()}
+ if(t.id=='sch'){S.school=t.value;return save()}
+ if(t.id=='rm'){S.room=t.value;S.cur=null;return render()}
+ if(t.id=='cs'){S.cur=t.value;return render()}
+ if(t.matches('select.c')){const s=all().find(x=>x.id===t.dataset.s),u=sub(t.dataset.u);return setVal(s,u,+t.dataset.i,t.value===''?null:+t.value)}
+ if(t.dataset.f){const s=all().find(x=>x.id===t.dataset.s),f=t.dataset.f;if(f=='abs')s.abs=t.value=='ขาดสอบ';else s[f]=t.value.trim();render()}});
+
+async function imp(files){
+ for(const f of files){try{const wb=XLSX.read(await f.arrayBuffer()),N=wb.SheetNames;
+  const ex=N.includes('อ่านออกเสียง')?'RT':N.some(n=>n.includes('ไทย คณิต'))?'ONET':N.includes('คณิตศาสตร์')?'NT':null;
+  if(!ex){toast('ไม่รู้จักรูปแบบไฟล์: '+f.name);continue}
+  const e=E[ex],room=($('#irm')?.value||'').trim(),rows={};
+  e.sub.forEach(u=>{if(!rows[u.sh])rows[u.sh]=XLSX.utils.sheet_to_json(wb.Sheets[u.sh],{header:1,defval:null})});
+  const F=rows[e.sub[0].sh],D=S.D[ex];let add=0,upd=0;
+  for(let r=5;r<F.length;r++){const w=F[r];if(!w||!w[7])continue;const fn=String(w[7]).trim(),ln=String(w[8]||'').trim();
+   let s=D.find(x=>x.fn===fn&&x.ln===ln&&x.room===room);
+   if(s)upd++;else{s=newS({pre:w[6]||'เด็กชาย',fn,ln,room,type:typeof w[9]=='string'?w[9]:'000 - ปกติ'});D.push(s);add++}
+   s.abs=w[10]==='ขาดสอบ';
+   e.sub.forEach(u=>{const q=rows[u.sh][r]||[];s.sc[u.k]=u.it.map(it=>{const v=q[it.x];return typeof v=='number'?v:null})})}
+  S.ex=ex;S.room=room;S.tab='st';toast(`${f.name}: เพิ่ม ${add} / อัปเดต ${upd} คน`)}catch(err){toast('อ่านไฟล์ไม่สำเร็จ: '+f.name)}}
+ render()}
+
+function exp(){const e=EX(),wb=XLSX.utils.book_new(),L=all(),H=['ลำดับ','เลขที่นั่งสอบ','รหัสโรงเรียน','ชื่อโรงเรียน','รหัสบัตรประชาชน','เลขที่','คำนำหน้า','ชื่อ','นามสกุล','ประเภทเด็ก','สถานะ','ห้อง'];
+ [...new Set(e.sub.map(u=>u.sh))].forEach(sh=>{const us=e.sub.filter(u=>u.sh===sh),w=Math.max(...us.map(u=>u.gx))+1,h=Array(w).fill(null);
+  H.slice(0,11).forEach((x,i)=>h[i]=x);us.forEach(u=>{u.it.forEach((it,i)=>h[it.x]=u.n+' ข้อ '+(i+1));u.G.forEach(g=>{if(g.t)h[g.tx]='รวม '+g.n});h[u.gx]='รวม'+u.n});
+  const body=L.map((s,i)=>{const r=Array(w).fill(null);r[0]=i+1;r[3]=S.school;r[5]=i+1;r[6]=s.pre;r[7]=s.fn;r[8]=s.ln;r[9]=s.type;r[10]=s.abs?'ขาดสอบ':'เข้าสอบ';
+   if(!s.abs)us.forEach(u=>{u.it.forEach((it,i)=>r[it.x]=sc(s,u)[i]);u.G.forEach((g,gi)=>{if(g.t)r[g.tx]=gtot(s,u,g)});r[u.gx]=utot(s,u)});return r});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([[`${e.t} ชั้น${e.g} โรงเรียน${S.school}`],[],[],[],h,...body]),sh)});
+ const M=e.sub.map(umax);const sr=sumRows.call?(()=>{const ex0=S.room;S.room='';const x=sumRows();S.room=ex0;return x})():[];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['ลำดับ','ห้อง','คำนำหน้า','ชื่อ','นามสกุล','สถานะ',...e.sub.map((u,i)=>`${u.n} (${M[i]})`),`รวม (${sum(M)})`],...sr.map((r,i)=>[i+1,r.s.room,r.s.pre,r.s.fn,r.s.ln,r.s.abs?'ขาดสอบ':'เข้าสอบ',...r.t,r.all])]),'สรุปผล');
+ const fn=`${e.t} ไฟล์กรอกคะแนน โรงเรียน${S.school}.xlsx`,out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+ const P=window.Capacitor&&Capacitor.Plugins;
+ if(P&&P.Filesystem&&P.Share){const pn=e.t+'-scores.xlsx';P.Filesystem.writeFile({path:pn,data:XLSX.write(wb,{bookType:'xlsx',type:'base64'}),directory:'CACHE'}).then(r=>P.Share.share({title:pn,url:r.uri})).then(()=>toast('ส่งออกไฟล์แล้ว')).catch(()=>toast('ส่งออกไม่สำเร็จ'))}
+ else{XLSX.writeFile(wb,fn);toast('ส่งออกไฟล์แล้ว')}}
+render();
+initSync();
+</script></body></html>
